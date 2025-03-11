@@ -1,7 +1,8 @@
 const formatDate = (
   dateInput?: string | Date,
   isFullDate = false,
-  isWithTime = false
+  isWithTime = false,
+  isOnlyTime = false
 ): string => {
   const listMonth = [
     "January",
@@ -32,13 +33,19 @@ const formatDate = (
   const month = date.getMonth();
   const monthName = listMonth[month];
 
+  const hours = `0${date.getHours()}`.slice(-2);
+  const minutes = `0${date.getMinutes()}`.slice(-2);
+  const formattedDate = `0${date.getDate()}`.slice(-2);
+
+  if (isOnlyTime) {
+    return `${hours}:${minutes}`;
+  }
+
   if (isWithTime) {
-    const hours = `0${date.getHours()}`.slice(-2);
-    const minutes = `0${date.getMinutes()}`.slice(-2);
-    return `${date.getDate()} ${monthName}, ${year} ${hours}:${minutes}`;
+    return `${formattedDate} ${monthName}, ${year} ${hours}:${minutes}`;
   }
   if (isFullDate) {
-    return `${date.getDate()} ${monthName}, ${year}`;
+    return `${formattedDate} ${monthName}, ${year}`;
   } else {
     return `${monthName} ${year}`;
   }

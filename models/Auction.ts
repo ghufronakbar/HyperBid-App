@@ -23,6 +23,8 @@ export interface Auction {
   updatedAt: Date;
   isAbleToBid: boolean;
   isAbleToFinish: boolean;
+  isSeller: boolean;
+  isBuyer: boolean;
 }
 
 export type AuctionStatus = "Pending" | "Accepted" | "Rejected";

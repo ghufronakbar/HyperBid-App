@@ -75,5 +75,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontFamily: "Outfit-Bold",
+    color: "#404040",
   },
 });

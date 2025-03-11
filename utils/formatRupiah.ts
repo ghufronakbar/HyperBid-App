@@ -1,4 +1,5 @@
-const formatRupiah = (number: number) => {
+const formatRupiah = (number?: number | null) => {
+  if (!number) return "-";
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",

@@ -7,8 +7,8 @@ import { Bid } from "@/models/Bid";
 import { Api } from "@/models/Response";
 import { Transaction } from "@/models/Transaction";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   Image,
@@ -34,7 +34,7 @@ const SettingScreen = () => {
       desc: "Sell your items and withdraw your money",
       icon: <Ionicons name="cart-outline" size={24} />,
       onClick: () => router.push("/sell"),
-    },    
+    },
     {
       title: "Password",
       desc: "Change your password",
@@ -143,11 +143,11 @@ const useSetting = () => {
       console.log(error);
     }
   };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
   return {
     bids,
     transactions,

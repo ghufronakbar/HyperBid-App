@@ -39,6 +39,9 @@ export default function Layout() {
         <Stack.Screen name="(home)" options={{ headerShown: false }} />
         <Stack.Screen name="sell" options={{ headerShown: false }} />
         <Stack.Screen name="withdraw" options={{ headerShown: false }} />
+        <Stack.Screen name="auction" options={{ headerShown: false }} />
+        <Stack.Screen name="detail-transaction" options={{ headerShown: false }} />
+        <Stack.Screen name="payment" options={{ headerShown: false }} />
         <Stack.Screen
           name="change-password"
           options={{

@@ -6,8 +6,8 @@ import { Auction } from "@/models/Auction";
 import { Api } from "@/models/Response";
 import formatDate from "@/utils/formatDate";
 import formatRupiah from "@/utils/formatRupiah";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   RefreshControl,
@@ -70,7 +70,15 @@ const HomeScreen = () => {
                 marginHorizontal: 16,
               }}
               renderItem={({ item }) => (
-                <View className="relative rounded-lg shadow-lg drop-shadow-lg overflow-hidden h-40 w-[80vw] bg-red-300 mr-4 flex flex-col justify-end">
+                <TouchableOpacity
+                  className="relative rounded-lg shadow-lg drop-shadow-lg overflow-hidden h-40 w-[80vw] bg-red-300 mr-4 flex flex-col justify-end"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/auction",
+                      params: { id: item.id },
+                    })
+                  }
+                >
                   <Img
                     uri={item.images[0]}
                     className="w-full h-full object-cover absolute top-0 left-0"
@@ -109,7 +117,7 @@ const HomeScreen = () => {
                       </View>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               )}
             />
           </View>
@@ -144,9 +152,15 @@ const HomeScreen = () => {
             />
             <View className="flex flex-row items-center justify-between px-4 flex-wrap w-full space-y-2">
               {selectedItems.map((item, index) => (
-                <View
+                <TouchableOpacity
                   className="w-[49%] h-52 rounded-lg overflow-hidden px-2 py-2 flex flex-col drop-shadow-lg border border-neutral-200 bg-white"
                   key={item.id + index}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/auction",
+                      params: { id: item.id },
+                    })
+                  }
                 >
                   <Img
                     uri={item.images[0]}
@@ -177,7 +191,7 @@ const HomeScreen = () => {
                       </ThemedText>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           </View>
@@ -208,31 +222,51 @@ const useHome = () => {
     segments.find((segment) => segment.name === selectedSegment)?.items || [];
 
   const fetchAuctions = async () => {
-    setLoading(true);
-    const res = await api.get<Api<Auction[]>>("/auctions");
-    setAuctions(res.data.data);
-    const segments: SegmentedAuction[] = [];
-    res.data.data.forEach((item) => {
-      const index = segments.findIndex(
-        (segment) => segment.name === item.category
-      );
-      if (index === -1) {
-        segments.push({ name: item.category, items: [item] });
-      } else {
-        segments[index].items.push(item);
+    try {
+      setLoading(true);
+      const res = await api.get<Api<Auction[]>>("/auctions");
+      setAuctions(res.data.data);
+      const segments: SegmentedAuction[] = [];
+      res.data.data.forEach((item) => {
+        const index = segments.findIndex(
+          (segment) => segment.name === item.category
+        );
+        if (index === -1) {
+          segments.push({ name: item.category, items: [item] });
+        } else {
+          segments[index].items.push(item);
+        }
+      });
+      for (const segment of segments) {
+        segment.items.sort(
+          (a, b) => new Date(b.start).getTime() - new Date(a.start).getTime()
+        );
       }
-    });
-    setSegments([{ name: "All", items: res.data.data }, ...segments]);
-    setLoading(false);
+      setSegments([
+        {
+          name: "All",
+          items: res.data.data.sort(
+            (a, b) => new Date(b.start).getTime() - new Date(a.start).getTime()
+          ),
+        },
+        ...segments,
+      ]);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const popularAuctions = auctions
     .sort((a, b) => b.bids.length - a.bids.length)
     .slice(0, 3);
 
-  useEffect(() => {
-    fetchAuctions();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchAuctions();
+    }, [])
+  );
 
   return {
     auctions,

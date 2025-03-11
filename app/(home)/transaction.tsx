@@ -4,7 +4,8 @@ import api from "@/config/api";
 import { Api } from "@/models/Response";
 import { Transaction } from "@/models/Transaction";
 import formatRupiah from "@/utils/formatRupiah";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { FlatList, RefreshControl, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -56,7 +57,17 @@ const TransactionScreen = () => {
               data={selectedItems}
               keyExtractor={(item, index) => index.toString()}
               renderItem={({ item }) => (
-                <View className="w-full bg-white rounded-lg px-4 py-2 h-20 flex flex-row overflow-hidden mb-2 space-x-2">
+                <TouchableOpacity
+                  className="w-full bg-white rounded-lg px-4 py-2 h-20 flex flex-row overflow-hidden mb-2 space-x-2"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/detail-transaction",
+                      params: {
+                        id: item.id,
+                      },
+                    })
+                  }
+                >
                   <Img
                     uri={item.auction?.images?.[0]}
                     className="w-16 h-16 aspect-square object-cover rounded-lg"
@@ -84,7 +95,7 @@ const TransactionScreen = () => {
                       </ThemedText>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               )}
             />
             {!loading && selectedItems.length === 0 && (
@@ -187,9 +198,11 @@ const useTransactions = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchTransaction();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchTransaction();
+    }, [])
+  );
 
   return {
     transactions,
