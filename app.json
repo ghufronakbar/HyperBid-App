@@ -8,7 +8,7 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#ba6742"
+      "backgroundColor": "#ffa31a"
     },
     "ios": {
       "supportsTablet": true,
