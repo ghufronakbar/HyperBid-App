@@ -28,11 +28,11 @@ const DetailTransactionScreen = () => {
     data,
     fetchData,
     loading,
-    handlePay,
     pending,
     getStatusInfo,
     location,
     setLocation,
+    getAdditionalInfo,
   } = useTransaction();
 
   if (!data) {
@@ -57,7 +57,7 @@ const DetailTransactionScreen = () => {
               <Img className="w-[100vw] h-full object-cover" />
             )}
             <FlatList
-              data={data.auction.images}
+              data={data?.auction?.images}
               keyExtractor={(item, index) => index.toString()}
               renderItem={({ item }) => (
                 <Img uri={item} className="w-[100vw] h-full object-cover" />
@@ -69,7 +69,7 @@ const DetailTransactionScreen = () => {
           <View className="flex flex-col py-2 space-y-2 mt-2">
             <View className="px-4 flex flex-col space-y-2">
               <ThemedText className="text-3xl font-omedium text-black">
-                {data.auction.name}
+                {data?.auction?.name}
               </ThemedText>
               <View className="flex flex-row items-center justify-between mb-4">
                 <View
@@ -82,7 +82,7 @@ const DetailTransactionScreen = () => {
                   </ThemedText>
                 </View>
                 <ThemedText className="text-base text-neutral-600">
-                  {formatDate(data.createdAt, true, true)}
+                  {formatDate(data?.createdAt, true, true)}
                 </ThemedText>
               </View>
               <View
@@ -90,22 +90,22 @@ const DetailTransactionScreen = () => {
                 style={{ elevation: 4 }}
               >
                 <Img
-                  uri={data.auction.seller.image}
+                  uri={data?.auction.seller.image}
                   className="w-12 h-12 rounded-full"
                   type="profile"
                 />
                 <View className="flex flex-col max-w-[70%]">
                   <ThemedText className="font-omedium text-black text-lg">
-                    {data.auction.seller.name}
+                    {data?.auction.seller.name}
                   </ThemedText>
                   <ThemedText className="text-xs text-neutral-600">
-                    {data.auction.location}
+                    {data?.auction.location}
                   </ThemedText>
                 </View>
               </View>
             </View>
             <View className="my-4 space-y-2 px-4">
-              {data.location ? (
+              {data?.location ? (
                 <View
                   className="flex flex-row space-x-4 w-full h-auto px-2 py-2 rounded-lg bg-white items-center"
                   style={{ elevation: 4 }}
@@ -151,20 +151,23 @@ const DetailTransactionScreen = () => {
         <ThemedText>Total Amount</ThemedText>
         <View className="flex flex-row items-center space-x-2">
           <ThemedText className="text-2xl font-omedium text-custom-1 mb-2">
-            {formatRupiah(data.amount)}
+            {formatRupiah(data?.amount)}
           </ThemedText>
           <ThemedText className="text-sm">Include Admin Fee (5%)</ThemedText>
         </View>
 
         <CustomButton
-          text={
-            data.status === "Pending" ? "Pay Now" : getStatusInfo(data).label
-          }
+          text={getStatusInfo(data).label}
           cn={`w-auto ${getStatusInfo(data).color}`}
           cnText="font-osemibold text-lg"
-          onPress={handlePay}
+          onPress={getStatusInfo(data).callback}
           loading={pending}
         />
+        {getAdditionalInfo(data) && (
+          <ThemedText className="text-sm text-neutral-600 mt-2 text-center">
+            {getAdditionalInfo(data)}
+          </ThemedText>
+        )}
       </View>
       <Toast />
     </SafeAreaView>
@@ -184,6 +187,7 @@ const useTransaction = () => {
       setLoading(true);
       const res = await api.get<Api<Transaction>>(`/transactions/${id}`);
       setData(res.data.data);
+      console.log("STATUS AFTER FETCH: ", res.data.data.status);
       if (res.data.data.location) {
         setLocation(res.data.data.location);
       }
@@ -198,20 +202,149 @@ const useTransaction = () => {
     }
   };
 
-  const getStatusInfo = (transaction: Transaction) => {
-    switch (transaction.status) {
+  const getStatusInfo = (transaction?: Transaction) => {
+    if (!transaction) {
+      return {
+        label: "Unknown Status",
+        color: "bg-gray-400",
+        callback: () => {},
+      };
+    }
+    switch (transaction?.status) {
       case "Pending":
-        return { label: "Pending", color: "bg-custom-1" };
+        if (transaction?.auction.isSeller) {
+          return {
+            label: "Waiting for Payment",
+            color: "bg-yellow-400",
+            callback: () => {},
+          };
+        } else {
+          return {
+            label: "Pay Now",
+            color: "bg-custom-1",
+            callback: handlePay,
+          };
+        }
       case "Paid":
-        return { label: "Paid", color: "bg-blue-400" };
+        if (transaction?.auction.isSeller) {
+          return {
+            label: "Make as Delivered",
+            color: "bg-yellow-400",
+            callback: handleDelivered,
+          };
+        } else {
+          return { label: "Paid", color: "bg-blue-400", callback: () => {} };
+        }
       case "Delivered":
-        return { label: "Delivered", color: "bg-green-400" };
+        if (transaction?.auction.isSeller) {
+          return {
+            label: "Delivered",
+            color: "bg-green-400",
+            callback: () => {},
+          };
+        } else {
+          return {
+            label: "Make as Completed",
+            color: "bg-blue-400",
+            callback: handleCompleted,
+          };
+        }
       case "Completed":
-        return { label: "Completed", color: "bg-black" };
+        return { label: "Completed", color: "bg-black", callback: () => {} };
       case "Expired":
-        return { label: "Expired", color: "bg-red-400" };
+        return { label: "Expired", color: "bg-red-400", callback: () => {} };
       default:
-        return { label: "Unknown Status", color: "bg-gray-400" };
+        return {
+          label: "Unknown Status",
+          color: "bg-gray-400",
+          callback: () => {},
+        };
+    }
+  };
+
+  const handleDelivered = async () => {
+    try {
+      if (!data) return;
+      if (pending) return;
+      if (data.status !== "Paid") return;
+
+      setPending(true);
+
+      console.log("STATUS BEFORE DELIVERED: ", data.status);
+      const res = await api.patch<Api<Transaction>>(
+        `/transactions/${id}/delivery`
+      );
+      console.log("STATUS AFTER DELIVERED: ", res.data.data.status);
+      await fetchData();
+
+      setPending(false);
+    } catch (error) {
+      console.log(error);
+      toastError(error);
+    } finally {
+      setPending(false);
+    }
+  };
+  const handleCompleted = async () => {
+    try {
+      if (!data) return;
+      if (pending) return;
+      if (data.status !== "Delivered") return;
+
+      setPending(true);
+
+      console.log("STATUS BEFORE COMPLETED: ", data.status);
+      const res = await api.patch<Api<Transaction>>(
+        `/transactions/${id}/completed`
+      );
+      console.log("STATUS AFTER COMPLETED: ", res.data.data.status);
+      await fetchData();
+
+      setPending(false);
+    } catch (error) {
+      console.log(error);
+      toastError(error);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const getAdditionalInfo = (transaction?: Transaction) => {
+    if (!transaction) {
+      return "";
+    }
+    const expiredDate = new Date(transaction.createdAt);
+    expiredDate.setDate(expiredDate.getDate() + 1);
+
+    switch (transaction?.status) {
+      case "Pending":
+        if (transaction?.auction.isSeller) {
+          return `Waiting for buyer payment before ${formatDate(
+            expiredDate,
+            true,
+            true
+          )}`;
+        } else {
+          return `Please pay before ${formatDate(expiredDate, true, true)}`;
+        }
+      case "Paid":
+        if (transaction?.auction.isSeller) {
+          return "Make sure to deliver the item";
+        } else {
+          return "Waiting for seller delivery";
+        }
+      case "Delivered":
+        if (transaction?.auction.isSeller) {
+          return "Waiting for buyer confirmation";
+        } else {
+          return "Please confirm the item has been received";
+        }
+      case "Completed":
+        return "Transaction completed";
+      case "Expired":
+        return "Transaction expired";
+      default:
+        return "";
     }
   };
 
@@ -263,7 +396,7 @@ const useTransaction = () => {
     getStatusInfo,
     location,
     setLocation,
-    handlePay,
     pending,
+    getAdditionalInfo,
   };
 };

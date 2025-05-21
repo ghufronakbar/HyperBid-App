@@ -23,6 +23,7 @@ export interface Auction {
   updatedAt: Date;
   isAbleToBid: boolean;
   isAbleToFinish: boolean;
+  isWaitingForSeller: boolean;
   isSeller: boolean;
   isBuyer: boolean;
 }

@@ -1,5 +1,5 @@
 const formatRupiah = (number?: number | null) => {
-  if (!number) return "-";
+  if (!number) return "Rp 0,00";
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",

@@ -422,9 +422,33 @@ const useAuction = () => {
     void: () => {},
   };
 
+  const handleFinish = async () => {
+    try {
+      if (loading || bidding) return;
+      if (!data?.isAbleToFinish) return;
+      setBidding(true);
+      await api.patch<Api<Auction>>(`/auctions/${id}`);
+      await fetchData();
+      toastSuccess("Auction finished");
+    } catch (error) {
+      console.log(error);
+      toastError(error);
+    } finally {
+      setBidding(false);
+    }
+  };
+
   if (data && new Date(data?.start) > new Date()) {
     customCase.label = "Upcoming";
     customCase.bg = "bg-gray-400";
+    customCase.void = undefined;
+  } else if (data?.isWaitingForSeller) {
+    customCase.label = "Waiting for seller";
+    customCase.bg = "bg-gray-400";
+    customCase.void = undefined;
+  } else if (data?.isSeller && data.transaction?.status === "Pending") {
+    customCase.label = "Waiting for buyer payment";
+    customCase.bg = "bg-black";
     customCase.void = undefined;
   } else if (data?.isSeller && !data.isAbleToFinish) {
     customCase.label = "You are the seller";
@@ -433,7 +457,7 @@ const useAuction = () => {
   } else if (data?.isSeller && data.isAbleToFinish && !data.transaction) {
     customCase.label = "Finish the auction";
     customCase.bg = "bg-green-400";
-    customCase.void = undefined;
+    customCase.void = handleFinish;
     // SOME FUNCTION TO FINISH THE AUCTION
   } else if (
     data?.isBuyer &&
@@ -475,6 +499,8 @@ const useAuction = () => {
     customCase.bg = "bg-custom-1";
     customCase.void = (type, dto) => handleBidding(type, dto);
   }
+
+  console.log("STATUS  ", data?.isAbleToBid, data?.isAbleToFinish);
 
   return {
     data,

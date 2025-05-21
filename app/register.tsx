@@ -136,6 +136,9 @@ const useRegister = () => {
       if (!emailRegex.test(String(form.email).toLowerCase())) {
         throw new Error("Email is not valid");
       }
+      if (!form.phone.startsWith("62")) {
+        throw new Error("Phone number must start with 62");
+      }
       if (loading) return;
       setLoading(true);
       toastLoading();

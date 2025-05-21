@@ -92,9 +92,15 @@ const SellScreen = () => {
             </ThemedText>
             <View className="flex flex-row items-center justify-between px-4 flex-wrap w-full space-y-2">
               {auctions.map((item, index) => (
-                <View
+                <TouchableOpacity
                   className="w-[49%] h-56 rounded-lg overflow-hidden px-2 py-2 flex flex-col drop-shadow-lg border border-neutral-200 bg-white"
                   key={item.id + index}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/auction",
+                      params: { id: item.id },
+                    })
+                  }
                 >
                   <Img
                     uri={item.images[0]}
@@ -134,7 +140,7 @@ const SellScreen = () => {
                       </ThemedText>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
             {!loading && auctions.length === 0 && (
@@ -171,27 +177,30 @@ const useSell = () => {
   };
 
   const getColorStatus = (auction: Auction) => {
-    if (auction.start > new Date() && auction.status === "Accepted") {
-      return { label: "Upcoming", color: "bg-gray-400" };
-    } else if (
-      (auction.end < new Date() ||
-        auction?.bids?.[0]?.amount === auction.buyNowPrice ||
-        auction?.transaction) &&
-      auction.status === "Accepted"
-    ) {
-      return { label: "Finished", color: "bg-black" };
-    } else if (
-      auction.start < new Date() &&
-      auction.end > new Date() &&
-      auction.status === "Accepted"
-    ) {
-      return { label: "Ongoing", color: "bg-blue-400" };
+    if (auction.transaction?.status === "Paid") {
+      return { label: "Paid", color: "bg-blue-400" };
+    }
+    if (auction.transaction?.status === "Pending") {
+      return { label: "Waiting", color: "bg-sky-400" };
+    }
+    if (auction.transaction?.status === "Delivered") {
+      return { label: "Delivered", color: "bg-purple-400" };
+    }
+    if (auction.transaction?.status === "Completed") {
+      return { label: "Completed", color: "bg-green-400" };
+    }
+    if (auction.transaction?.status === "Expired") {
+      return { label: "Expired", color: "bg-gray-400" };
+    }
+
+    if (auction.status === "Accepted") {
+      return { label: "Accepted", color: "bg-black" };
     } else if (auction.status === "Pending") {
       return { label: "Pending", color: "bg-yellow-400" };
     } else if (auction.status === "Rejected") {
       return { label: "Rejected", color: "bg-red-400" };
     } else {
-      return { label: "", color: "bg-gray-400" };
+      return { label: "Check", color: "bg-gray-400" };
     }
   };
 
